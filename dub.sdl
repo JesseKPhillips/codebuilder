@@ -1,2 +1,3 @@
 name "codebuilder"
 description "Provides management of constructing code strings and inserts file line information to improve debugability of Compile Time mixins."
+license "BSL-1.0"
