@@ -108,6 +108,7 @@ struct CodeBuilder {
 	 * To reduce indentation without inserting code use put(Indent.close);
 	 */
 	void put(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
+		upper ~= "#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n";
 		switch(str) {
 			case "":
 				if(!indent)
@@ -127,7 +128,6 @@ struct CodeBuilder {
 
 	/// ditto
 	void rawPut(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
-		upper ~= "#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n";
 		upper ~= str;
 		put(indent);
 	}
@@ -252,4 +252,29 @@ struct CodeBuilder {
 			pop();
 		return upper;
 	}
+}
+
+/// Raw input does not insert indents
+unittest {
+	auto code = CodeBuilder(1);
+
+   code.rawPut("No indentation");
+
+   auto ans = code.finalize();
+
+   assert(ans == "No indentation", ans);
+}
+
+
+// Keep and end of file
+/// Line numbers are added when using put
+unittest {
+	auto code = CodeBuilder(0);
+
+#line 0 "fake.file"
+   code.put("line");
+
+   auto ans = code.finalize();
+
+   assert(ans == "#line 0 \"fake.file\"\nline", ans);
 }
