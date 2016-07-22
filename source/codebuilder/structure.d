@@ -108,7 +108,8 @@ struct CodeBuilder {
 	 * To reduce indentation without inserting code use put(Indent.close);
 	 */
 	void put(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
-		upper ~= "#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n";
+		version(ModifyLine)
+			upper ~= "#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n";
 		switch(str) {
 			case "":
 				if(!indent)
