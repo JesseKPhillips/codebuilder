@@ -3,25 +3,17 @@
  */
 module codebuilder.structure;
 
-version(D_Version2) {
-	import std.algorithm;
-	import std.conv;
-	import std.range;
-	import std.regex;
-} else {
-	import std.string;
-	import ProtocolBuffer.d1support;
-}
+import std.algorithm;
+import std.conv;
+import std.range;
+import std.regex;
 
 /*
  * Converts a numeric to an indent string
  */
 string indented(int indentCount) {
     assert(indentCount > -1);
-	version(D_Version2)
-		return to!(string)(repeat("\t", indentCount).join.array);
-	else
-		return repeat("\t", indentCount);
+    return to!(string)(repeat("\t", indentCount).join.array);
 }
 
 /**
@@ -185,7 +177,7 @@ struct CodeBuilder {
 				put(op.text, op.indent, op.file, op.line);
 
 		lower.popBack();
-		version(D_Version2) if(!__ctfe) assumeSafeAppend(lower);
+		if(!__ctfe) assumeSafeAppend(lower);
 	}
 
 	/**
