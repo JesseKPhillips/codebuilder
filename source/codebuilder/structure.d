@@ -81,6 +81,7 @@ struct CodeBuilder {
 	private Operation[][string] saved;
 
 	int indentCount;
+	bool modifyLine = true;
 
 	/**
 	 */
@@ -110,7 +111,7 @@ struct CodeBuilder {
 	 * To reduce indentation without inserting code use put(Indent.close);
 	 */
 	void put(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
-		version(ModifyLine)
+		version(ModifyLine) if(modifyLine)
 			upper ~= "#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n";
 		switch(str) {
 			case "":
