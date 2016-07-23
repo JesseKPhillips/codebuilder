@@ -1,16 +1,16 @@
-= Build Code =
+# Build Code
 This library provides a structured way to build source code from strings. It is intended for use with the D programming language, but can be utilized for other languages as well. The key piece specific to D is the automatically injected line/file insertions.
 
 When D mixes in a string for further compilation, errors compiling that string will start pointing to source code which does not exist. By utilizing this library to build out the code structure, the compiler will point to the source line which inserted the piece of code. This will hide where the mixin took place, but direct your attention to the offending source structure.
 
-== Why use a Code Builder ==
+## Why use a Code Builder
 When generating source code, variables and strings are concatenated together to build out new code. This can become very ugly, be it using a string formatter or plain old concatenation. Code Builder tries to allow for structuring code similar to how you'd write it in a file if you were writing the source code by hand. (Don't be fooled, it still isn't the same.)
 
 This library actually comes out of work done for the ProtocolBuffer tool that generates D code from proto files. (At the time of writing I'm still working on modifying ProtocolBuffer to utilize this library).
 
 https://github.com/opticron/ProtocolBuffer
 
-== Utilizing Code Builder ==
+## Utilizing Code Builder
 Creating your source code store:
 
 ```
