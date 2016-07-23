@@ -8,12 +8,14 @@ import std.conv;
 import std.range;
 import std.regex;
 
+string indentation = "\t";
+
 /*
  * Converts a numeric to an indent string
  */
 string indented(int indentCount) {
     assert(indentCount > -1);
-    return to!(string)(repeat("\t", indentCount).join.array);
+    return to!(string)(repeat(indentation, indentCount).join.array);
 }
 
 /**

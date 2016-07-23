@@ -19,7 +19,7 @@ auto indentCount = 0;
 auto code = CodeBuilder(indentCount);
 ```
 
-The indentCount allows building code to be broken out into functions which manage their own CodeBuilder. That is one of the benefits of utilizing this library is that it will work with you to manage indentation. At this time the library indents utilizing tabs and provides no way to specify otherwise.
+The indentCount allows building code to be broken out into functions which manage their own CodeBuilder. That is one of the benefits of utilizing this library is that it will work with you to manage indentation. The library defaults to utilizing tabs for indentation, modify codebuilder.structure.indentation with the desired indentation string.
 
 ```
 code.put("void main() {\n", Indent.open);
