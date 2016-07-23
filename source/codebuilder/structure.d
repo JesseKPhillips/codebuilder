@@ -126,11 +126,33 @@ struct CodeBuilder {
 				rawPut(str, indent & Indent.open, f, l);
 		}
 	}
+	/// Line numbers are added when using put
+	unittest {
+		auto code = CodeBuilder(0);
+
+		mixin(`#line 0 "fake.file"
+			  code.put("line");`);
+
+		auto ans = code.finalize();
+
+		assert(ans == "#line 0 \"fake.file\"\nline", ans);
+	}
+
 
 	/// ditto
 	void rawPut(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
 		upper ~= str;
 		put(indent);
+	}
+	/// Raw input does not insert indents
+	unittest {
+		auto code = CodeBuilder(1);
+
+		code.rawPut("No indentation");
+
+		auto ans = code.finalize();
+
+		assert(ans == "No indentation", ans);
 	}
 
 	/// ditto
@@ -255,27 +277,25 @@ struct CodeBuilder {
 	}
 }
 
-/// Raw input does not insert indents
+/// Example usage
 unittest {
-	auto code = CodeBuilder(1);
+	auto indentCount = 0;
+	auto code = CodeBuilder(indentCount);
+	code.put("void main() {\n", Indent.open);
+	code.push("}\n");
+	code.put("int a = 5;\n");
+	code.put("multiply(a);\n");
+	code.pop();
 
-   code.rawPut("No indentation");
+	code.put("\nvoid multiply(int v) {\n", Indent.open);
+	code.push("}\n");
+	code.put("try {\n", Indent.open);
+	code.build("} catch(Exception e) {\n", Indent.close | Indent.open);
+	code.build("import std.stdio;\n");
+	code.build("writeln(`Exception is bad but I don't care.`);\n");
+	code.build("}\n", Indent.close);
+	code.pushBuild();
 
-   auto ans = code.finalize();
-
-   assert(ans == "No indentation", ans);
-}
-
-
-// Keep and end of file
-/// Line numbers are added when using put
-unittest {
-	auto code = CodeBuilder(0);
-
-#line 0 "fake.file"
-   code.put("line");
-
-   auto ans = code.finalize();
-
-   assert(ans == "#line 0 \"fake.file\"\nline", ans);
+	code.put("return v * ");
+	code.rawPut(76.to!string ~ ";\n");
 }
