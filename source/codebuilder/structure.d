@@ -9,12 +9,20 @@ import std.range;
 import std.regex;
 
 string indentation = "\t";
+unittest {
+	auto code = CodeBuilder(1);
+	code.modifyLine = false;
+	scope(exit) indentation = "\t";
+	indentation = "    ";
+	code.put("Hello");
+	assert(code.finalize().startsWith("    "));
+}
 
 /*
  * Converts a numeric to an indent string
  */
 string indented(int indentCount) {
-    assert(indentCount > -1);
+    assert(indentCount > -1, "Indentation can never be less than 0.");
     return to!(string)(repeat(indentation, indentCount).join.array);
 }
 
@@ -128,9 +136,8 @@ struct CodeBuilder {
 				rawPut(indented(indentCount), Indent.none, f, l);
 				rawPut(str, indent & Indent.open, f, l);
 		}
-	}
-	/// Line numbers are added when using put
-	unittest {
+	} unittest {
+		/// Line numbers are added when using put
 		auto code = CodeBuilder(0);
 
 		mixin(`#line 0 "fake.file"
@@ -146,9 +153,8 @@ struct CodeBuilder {
 	void rawPut(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
 		upper ~= str;
 		put(indent);
-	}
-	/// Raw input does not insert indents
-	unittest {
+	} unittest {
+		/// Raw input does not insert indents
 		auto code = CodeBuilder(1);
 
 		code.rawPut("No indentation");
@@ -163,7 +169,13 @@ struct CodeBuilder {
 		assert(!(indent & Indent.close & Indent.open), "No-op indent");
 		if(indent & Indent.close) indentCount--;
 		if(indent & Indent.open) indentCount++;
-	}
+	} unittest {
+		auto code = CodeBuilder(0);
+		code.modifyLine = false;
+		code.put(Indent.open);
+		code.put("Indented");
+		assert(code.finalize().startsWith(indentation));
+   }
 
 	/**
 	 * Places str onto a stack that can latter be popped into
@@ -173,22 +185,38 @@ struct CodeBuilder {
 	 */
 	void push(string str, Indent indent = Indent.close, string f = __FILE__, int l = __LINE__) {
 		lower ~= [Operation(str, indent, false, f, l)];
+	} unittest {
+		auto code = CodeBuilder(0);
+		code.modifyLine = false;
+		code.push("}\n");
+		code.push("b\n", Indent.none);
+		code.push("{\n", Indent.open);
+		assert(code.finalize() == "{\n\tb\n}\n", code.finalize());
 	}
 
 	/// ditto
 	void push(Indent indent, string f = __FILE__, int l = __LINE__) {
 		lower ~= [Operation(null, indent, false, f, l)];
+	} unittest {
+		auto code = CodeBuilder(0);
+		code.modifyLine = false;
+		code.push("b\n", Indent.none);
+		code.push(Indent.open);
+		code.push("{\n", Indent.none);
+		assert(code.finalize() == "{\n\tb\n", code.finalize());
 	}
 
 	/// ditto
 	void rawPush(string str, Indent indent = Indent.close, string f = __FILE__, int l = __LINE__) {
 		lower ~= [Operation(str, indent, true, f, l)];
+	} unittest {
+		auto code = CodeBuilder(5);
+		code.modifyLine = false;
+		code.rawPush("b\n", Indent.none);
+		code.push("{\n", Indent.open);
+		assert(code.finalize() == "\t\t\t\t\t{\nb\n", code.finalize());
 	}
 
-	/// ditto
-	void rawPush() {
-		lower ~= [Operation(null, Indent.none, true)];
-	}
 
 	/**
 	 * Places the top stack item into the buffer.
@@ -204,6 +232,14 @@ struct CodeBuilder {
 
 		lower.popBack();
 		if(!__ctfe) assumeSafeAppend(lower);
+	} unittest {
+		auto code = CodeBuilder(0);
+		code.modifyLine = false;
+		code.put("{\n", Indent.open);
+		code.push("}\n");
+		code.pop();
+		code.put("b\n");
+		assert(code.finalize() == "{\n}\nb\n", code.finalize());
 	}
 
 	/**
