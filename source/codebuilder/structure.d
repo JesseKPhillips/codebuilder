@@ -39,10 +39,6 @@ string indented(int indentCount) {
  */
 enum Indent { none, open, close = 4 }
 
-struct Memory {
-	private CodeBuilder.Operation[][string] saved;
-}
-
 /**
  * An output range that provides extended functionality for
  * constructing a well formatted string of code.
@@ -85,8 +81,6 @@ struct CodeBuilder {
 	}
 	private Operation[] upper;
 	private Operation[][] lower;
-	private Operation[] store;
-	private Operation[][string] saved;
 
 	int indentCount;
 	bool modifyLine = true;
@@ -281,70 +275,6 @@ struct CodeBuilder {
 	}
 
 	/**
-	 * Construct a code string outside of the current buffer.
-	 *
-	 * Used to construct a code string in sequence, as apposed
-	 * to pushing the desired code in reverse (making it harder
-	 * to read).
-	 *
-	 * A build can also be saved with a name and later called.
-	 */
-	void build(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
-		store ~= Operation(str, indent, false, f, l);
-	}
-
-	/// ditto
-	void build(Indent indent, string f = __FILE__, int l = __LINE__) {
-		store ~= Operation(null, indent, false, f, l);
-	}
-
-	/// ditto
-	void buildRaw(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
-		store ~= Operation(str, indent, true, f, l);
-	}
-
-	/**
-	 * See push and put, performed on the current build.
-	 */
-	void pushBuild() {
-		lower ~= store;
-		store = null;
-	}
-
-	/// ditto
-	void pushBuild(string name) {
-		lower ~= saved[name];
-	}
-
-	/// ditto
-	void putBuild(string name) {
-		pushBuild(name);
-		pop();
-	}
-
-
-	/**
-	 * Stores the build to be called on later with $(B name).
-	 */
-	void saveBuild(string name) {
-		saved[name] = store;
-		store = null;
-	}
-
-	Memory mem() {
-		Memory m;
-		m.saved = saved;
-		return m;
-	}
-
-	/**
-	 * Adds the memory to this CodeBuilder
-	 */
-	void mem(Memory m) {
-		saved = m.saved;
-	}
-
-	/**
 	 * Returns the buffer, applying an code remaining on the stack.
 	 */
 	string finalize() {
@@ -376,11 +306,12 @@ unittest {
 	code.put("\nvoid multiply(int v) {\n", Indent.open);
 	code.push("}\n");
 	code.put("try {\n", Indent.open);
-	code.build("} catch(Exception e) {\n", Indent.close | Indent.open);
-	code.build("import std.stdio;\n");
-	code.build("writeln(`Exception is bad but I don't care.`);\n");
-	code.build("}\n", Indent.close);
-	code.pushBuild();
+	auto catchblock = CodeBuilder(1);
+	catchblock.put("} catch(Exception e) {\n", Indent.close | Indent.open);
+	catchblock.put("import std.stdio;\n");
+	catchblock.put("writeln(`Exception is bad but I don't care.`);\n");
+	catchblock.put("}\n", Indent.close);
+	code.push(catchblock);
 
 	code.put("return v * ");
 	code.rawPut(76.to!string ~ ";\n");

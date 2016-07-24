@@ -38,14 +38,15 @@ The CodeBuilder also provides a stack for pushing code that can and will be popp
 By default, code that is pushed on to the stack will close indentation. Specifying Indent.none can be done to prevent this, but the general intention for the stack is closing scope of some kind.
 
 ```
-code.put("\nint multiply(int v) {\n", Indent.open);
+code.put("\nvoid multiply(int v) {\n", Indent.open);
 code.push("}\n");
 code.put("try {\n", Indent.open);
-code.build("} catch(Exception e) {\n", Indent.close | Indent.open);
-code.build("import std.stdio;\n");
-code.build("writeln(`Exception is bad but I don't care.`);\n");
-code.build("}\n", Indent.close);
-code.pushBuild();
+auto catchblock = CodeBuilder(1);
+catchblock.put("} catch(Exception e) {\n", Indent.close | Indent.open);
+catchblock.put("import std.stdio;\n");
+catchblock.put("writeln(`Exception is bad but I don't care.`);\n");
+catchblock.put("}\n", Indent.close);
+code.push(catchblock);
 
 code.put("return v * ");
 code.rawPut(76.to!string ~ ";\n");
@@ -53,8 +54,8 @@ import std.stdio;
 writeln(code.finalize());
 ```
 
-Some times the closing code can be a lot more than a single line, for this Code Builder also holds a separate code which can later be pushed on to the stack. This allows the code to be written in a linear fashion instead of needing to reverse the source code order, as you would when using code.push(). It may make sense to modify the library in the future to allow pushing CodeBuilder's onto a CodeBuilder.
+Sometimes the closing code can be a lot more than a single line, for this Code Builder can push other code onto its stack. This allows the code to be written in a linear fashion instead of needing to reverse the source code order, as you would when using code.push().
 
-The build also allows for saving the build with a name, you can then recall the build in the future. Though indentation is not modified base on where the saved build is placed.
+Since this specific code block will close indentation as the first operation, it needs to be created with at least on indentation level, if it will be closing more than that then it's indentation must be increased as the library verifies that indentation does not drop below 0;
 
-Sometimes it makes sense to break a single line of code into multiple insertions. For this rawPut() is provided, it will not add additional indentation.
+A single line of code can be broken into multiple insertions by using rawPut(), it will not add additional indentation before the provided code.
