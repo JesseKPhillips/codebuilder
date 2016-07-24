@@ -176,6 +176,26 @@ struct CodeBuilder {
    }
 
 	/**
+	 */
+	void put(CodeBuilder build) {
+		build.finalize();
+		upper ~= build.upper;
+	} unittest {
+		// CodeBuilders can be added to each other
+		auto code = CodeBuilder(5);
+		code.modifyLine = false;
+		code.put("a\n", Indent.open);
+		code.put("b\n");
+		code.put("c\n", Indent.close);
+		auto code2 = CodeBuilder(0);
+		code2.modifyLine = false;
+		code2.put("{\n", Indent.open);
+		code2.push("}\n", Indent.close);
+		code2.put(code);
+		assert(code2.finalize() == "{\n\ta\n\t\tb\n\tc\n}\n", code2.finalize());
+	}
+
+	/**
 	 * Places str onto a stack that can latter be popped into
 	 * the current buffer.
 	 *
@@ -238,6 +258,26 @@ struct CodeBuilder {
 		code.pop();
 		code.put("b\n");
 		assert(code.finalize() == "{\n}\nb\n", code.finalize());
+	}
+
+	/**
+	 */
+	void push(CodeBuilder build) {
+		build.finalize();
+		lower ~= build.upper;
+	} unittest {
+		// CodeBuilders can be added to each other
+		auto code = CodeBuilder(5);
+		code.modifyLine = false;
+		code.put("a\n", Indent.open);
+		code.put("b\n");
+		code.put("c\n", Indent.close);
+		auto code2 = CodeBuilder(0);
+		code2.modifyLine = false;
+		code2.put("{\n", Indent.open);
+		code2.push("}\n", Indent.close);
+		code2.push(code);
+		assert(code2.finalize() == "{\n\ta\n\t\tb\n\tc\n}\n", code2.finalize());
 	}
 
 	/**
