@@ -83,7 +83,7 @@ struct CodeBuilder {
 		string file;
 		int line;
 	}
-	private string upper;
+	private Operation[] upper;
 	private Operation[][] lower;
 	private Operation[] store;
 	private Operation[][string] saved;
@@ -120,22 +120,8 @@ struct CodeBuilder {
 	 */
 	void put(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
 		version(ModifyLine) if(modifyLine)
-			upper ~= "#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n";
-		switch(str) {
-			case "":
-				if(!indent)
-					goto default;
-				goto case;
-			case "\n":
-				goto case;
-			case "\r\n":
-				rawPut(str, indent, f, l);
-				break;
-			default:
-				if(indent & Indent.close) indentCount--;
-				rawPut(indented(indentCount), Indent.none, f, l);
-				rawPut(str, indent & Indent.open, f, l);
-		}
+			upper ~= Operation("#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n", Indent.none, true);
+		upper ~= Operation(str, indent);
 	} unittest {
 		/// Line numbers are added when using put
 		auto code = CodeBuilder(0);
@@ -151,8 +137,7 @@ struct CodeBuilder {
 
 	/// ditto
 	void rawPut(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
-		upper ~= str;
-		put(indent);
+		upper ~= Operation(str, indent, true);
 	} unittest {
 		/// Raw input does not insert indents
 		auto code = CodeBuilder(1);
@@ -162,19 +147,32 @@ struct CodeBuilder {
 		auto ans = code.finalize();
 
 		assert(ans == "No indentation", ans);
+	} unittest {
+		/// Call finalization twice
+		auto code = CodeBuilder(1);
+		code.modifyLine = false;
+
+		code.rawPut("No indentation\n");
+		code.put("{\n", Indent.open);
+
+		code.finalize();
+		auto ans = code.finalize();
+
+		assert(ans == "No indentation\n\t{\n", ans);
 	}
 
 	/// ditto
 	void put(Indent indent) {
 		assert(!(indent & Indent.close & Indent.open), "No-op indent");
-		if(indent & Indent.close) indentCount--;
-		if(indent & Indent.open) indentCount++;
+		upper ~= Operation(null, indent);
 	} unittest {
 		auto code = CodeBuilder(0);
 		code.modifyLine = false;
+		code.put("No Indent");
 		code.put(Indent.open);
 		code.put("Indented");
-		assert(code.finalize().startsWith(indentation));
+		assert(!code.finalize().startsWith(indentation));
+		assert(code.finalize() == "No Indent\tIndented", code.finalize());
    }
 
 	/**
@@ -310,9 +308,18 @@ struct CodeBuilder {
 	 * Returns the buffer, applying an code remaining on the stack.
 	 */
 	string finalize() {
-		while(!lower.empty())
+		while(!lower.empty)
 			pop();
-		return upper;
+		string ans;
+		int indentCount = indentCount;
+		foreach(op; upper.save) {
+			if(op.indent & Indent.close) indentCount--;
+			if(!op.raw)
+				ans ~= indented(indentCount);
+			ans ~= op.text;
+			if(op.indent & Indent.open) indentCount++;
+		}
+		return ans;
 	}
 }
 
