@@ -8,6 +8,9 @@ import std.conv;
 import std.range;
 import std.regex;
 
+/**
+ * Specifies what string will be prepended for each indentation level.
+ */
 string indentation = "\t";
 unittest {
 	auto code = CodeBuilder(1);
@@ -18,7 +21,7 @@ unittest {
 	assert(code.finalize().startsWith("    "));
 }
 
-/*
+/**
  * Converts a numeric to an indent string
  */
 string indented(int indentCount) {
