@@ -26,7 +26,13 @@ unittest {
  */
 string indented(int indentCount) {
     assert(indentCount > -1, "Indentation can never be less than 0.");
-    return to!(string)(repeat(indentation, indentCount).join.array);
+	if(__ctfe)
+		return to!(string)(repeat("    ", indentCount).join.array);
+	else
+		return to!(string)(repeat(indentation, indentCount).join.array);
+} unittest {
+	static assert(indented(2) == "        ");
+	assert(indented(2) == "\t\t");
 }
 
 /**
@@ -294,6 +300,19 @@ struct CodeBuilder {
 		}
 		return ans;
 	}
+}
+
+unittest {
+	// Compiletime capabile
+	string run() {
+		auto code = CodeBuilder(1);
+		code.modifyLine = false;
+		code.put("Hello");
+		code.rawPut(" World");
+		return code.finalize();
+	}
+
+	static assert(run() == "    Hello World", run());
 }
 
 /// Example usage
