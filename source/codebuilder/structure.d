@@ -228,7 +228,7 @@ struct CodeBuilder {
 	}
 
 	/// ditto
-	void rawPush(string str, Indent indent = Indent.close, string f = __FILE__, int l = __LINE__) {
+	void rawPush(string str = null, Indent indent = Indent.close, string f = __FILE__, int l = __LINE__) {
 		lower ~= [Operation(str, indent, true, f, l)];
 	} unittest {
 		auto code = CodeBuilder(5);
@@ -236,6 +236,16 @@ struct CodeBuilder {
 		code.rawPush("b\n", Indent.none);
 		code.push("{\n", Indent.open);
 		assert(code.finalize() == "\t\t\t\t\t{\nb\n", code.finalize());
+	} unittest {
+		auto code = CodeBuilder(0);
+		code.modifyLine = false;
+		code.put("{\n", Indent.open);
+		if(true)
+			code.rawPush();
+		else
+			code.push("b\n", Indent.none);
+		code.pop();
+		assert(code.finalize() == "{\n", code.finalize());
 	}
 
 
@@ -303,7 +313,7 @@ struct CodeBuilder {
 }
 
 unittest {
-	// Compiletime capabile
+	// Compiletime capable
 	string run() {
 		auto code = CodeBuilder(1);
 		code.modifyLine = false;
