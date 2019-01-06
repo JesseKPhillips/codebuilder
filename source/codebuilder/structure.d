@@ -15,13 +15,16 @@ import std.regex;
  *      indentCount =    How many indetations.
  *      indentation =    String to use for each indentation.
  */
+@safe pure nothrow
 string indented(int indentCount, string indentation)
     in(indentCount > -1, "Indentation can never be less than 0.")
 do {
-	if(__ctfe)
-		return to!(string)(repeat("    ", indentCount).join.array);
-	else
-		return to!(string)(repeat(indentation, indentCount).join.array);
+	try
+		return text(repeat(indentation, indentCount).join.array);
+	catch(Exception e) {
+		// Do not expect exception to exist from any user input.
+		return "CodeBuilder Exception logic error.";
+	}
 } unittest {
 	static assert(indented(2, "    ") == "        ");
 	assert(indented(2, "\t") == "\t\t");
@@ -89,6 +92,7 @@ struct CodeBuilder {
 
 	/**
 	 */
+	@safe pure nothrow
 	static CodeBuilder opCall(int indentedCount) {
 		CodeBuilder b;
 		b.indentCount = indentedCount;
@@ -114,6 +118,7 @@ struct CodeBuilder {
 	 *
 	 * To reduce indentation without inserting code use put(Indent.close);
 	 */
+	@safe pure nothrow
 	void put(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
 		version(ModifyLine) if(modifyLine)
 			upper ~= Operation("#line " ~ l.to!string ~ " \"" ~ f ~ "\"\n", Indent.none, true);
@@ -132,6 +137,7 @@ struct CodeBuilder {
 
 
 	/// ditto
+	@safe pure nothrow
 	void rawPut(string str, Indent indent = Indent.none, string f = __FILE__, int l = __LINE__) {
 		upper ~= Operation(str, indent, true);
 	} unittest {
@@ -158,6 +164,7 @@ struct CodeBuilder {
 	}
 
 	/// ditto
+	@safe pure nothrow
 	void put(Indent indent) {
 		assert(!(indent & Indent.close & Indent.open), "No-op indent");
 		upper ~= Operation(null, indent);
@@ -173,6 +180,7 @@ struct CodeBuilder {
 
 	/**
 	 */
+	@safe nothrow
 	void put(CodeBuilder build) {
 		build.finalize();
 		upper ~= build.upper;
@@ -197,6 +205,7 @@ struct CodeBuilder {
 	 *
 	 * See put for specifics.
 	 */
+	@safe pure nothrow
 	void push(string str, Indent indent = Indent.close, string f = __FILE__, int l = __LINE__) {
 		lower ~= [Operation(str, indent, false, f, l)];
 	} unittest {
@@ -209,6 +218,7 @@ struct CodeBuilder {
 	}
 
 	/// ditto
+	@safe pure nothrow
 	void push(Indent indent, string f = __FILE__, int l = __LINE__) {
 		lower ~= [Operation(null, indent, false, f, l)];
 	} unittest {
@@ -221,6 +231,7 @@ struct CodeBuilder {
 	}
 
 	/// ditto
+	@safe pure nothrow
 	void rawPush(string str = null, Indent indent = Indent.close, string f = __FILE__, int l = __LINE__) {
 		lower ~= [Operation(str, indent, true, f, l)];
 	} unittest {
@@ -245,6 +256,7 @@ struct CodeBuilder {
 	/**
 	 * Places the top stack item into the buffer.
 	 */
+	@trusted nothrow
 	void pop() {
 		assert(!lower.empty(), "Can't pop empty buffer");
 
@@ -268,6 +280,7 @@ struct CodeBuilder {
 
 	/**
 	 */
+	@safe nothrow
 	void push(CodeBuilder build) {
 		build.finalize();
 		lower ~= build.upper;
@@ -289,6 +302,7 @@ struct CodeBuilder {
 	/**
 	 * Returns the buffer, applying an code remaining on the stack.
 	 */
+	@safe nothrow
 	string finalize() {
 		while(!lower.empty)
 			pop();
@@ -315,7 +329,7 @@ unittest {
 		return code.finalize();
 	}
 
-	static assert(run() == "    Hello World", run());
+	static assert(run() == "\tHello World", run());
 }
 
 /// Example usage
