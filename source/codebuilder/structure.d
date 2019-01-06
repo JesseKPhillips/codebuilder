@@ -9,30 +9,22 @@ import std.range;
 import std.regex;
 
 /**
- * Specifies what string will be prepended for each indentation level.
- */
-string indentation = "\t";
-unittest {
-	auto code = CodeBuilder(1);
-	code.modifyLine = false;
-	scope(exit) indentation = "\t";
-	indentation = "    ";
-	code.put("Hello");
-	assert(code.finalize().startsWith("    "));
-}
-
-/**
  * Converts a numeric to an indent string
+ * 
+ * Params:
+ *      indentCount =    How many indetations.
+ *      indentation =    String to use for each indentation.
  */
-string indented(int indentCount) {
-    assert(indentCount > -1, "Indentation can never be less than 0.");
+string indented(int indentCount, string indentation)
+    in(indentCount > -1, "Indentation can never be less than 0.")
+do {
 	if(__ctfe)
 		return to!(string)(repeat("    ", indentCount).join.array);
 	else
 		return to!(string)(repeat(indentation, indentCount).join.array);
 } unittest {
-	static assert(indented(2) == "        ");
-	assert(indented(2) == "\t\t");
+	static assert(indented(2, "    ") == "        ");
+	assert(indented(2, "\t") == "\t\t");
 }
 
 /**
@@ -93,6 +85,7 @@ struct CodeBuilder {
 
 	int indentCount;
 	bool modifyLine = true;
+	string indentation = "\t";
 
 	/**
 	 */
@@ -174,7 +167,7 @@ struct CodeBuilder {
 		code.put("No Indent");
 		code.put(Indent.open);
 		code.put("Indented");
-		assert(!code.finalize().startsWith(indentation));
+		assert(!code.finalize().startsWith(code.indentation));
 		assert(code.finalize() == "No Indent\tIndented", code.finalize());
    }
 
@@ -304,7 +297,7 @@ struct CodeBuilder {
 		foreach(op; upper.save) {
 			if(op.indent & Indent.close) indentCount--;
 			if(!op.raw)
-				ans ~= indented(indentCount);
+				ans ~= indented(indentCount, indentation);
 			ans ~= op.text;
 			if(op.indent & Indent.open) indentCount++;
 		}
